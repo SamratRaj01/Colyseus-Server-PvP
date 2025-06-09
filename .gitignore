@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# Build artifacts
+build/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Colyseus Cloud config
+.colyseus-cloud.json
+.devmode.json
+
+# Optional: IDE/editor settings
+.vscode/
+.idea/
+*.sw?
+
+# Environment variables
+.env
+.env.*

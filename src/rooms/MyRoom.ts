@@ -15,6 +15,7 @@ export class MyRoom extends Room<MyRoomState> {
     this.SetUpMessageHandlers();
 
     console.log(`Room ${this.roomId} created`);
+
   }
 
   onJoin(client: Client, options: any) {
@@ -112,7 +113,7 @@ export class MyRoom extends Room<MyRoomState> {
       console.log("Bullet config:", message);
 
       const bulletData = {
-        shooterId: client.sessionId,
+        ownerID: client.sessionId,
         position: message.position,
         direction: message.direction,
         speed: message.speed,

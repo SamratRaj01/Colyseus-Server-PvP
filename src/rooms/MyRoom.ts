@@ -12,88 +12,9 @@ export class MyRoom extends Room<MyRoomState> {
 
     this.state.currentTurn = 1;
 
-    this.onMessage("ping", (client, message) => {
-      console.log(
-        "ping received from",
-        client.sessionId,
-        "with message:",
-        message
-      );
-      client.send("pong", { message: "pong" });
-    });
+    this.SetUpMessageHandlers();
 
-    this.onMessage("next_turn", (client, message) => {
-      this.state.currentTurn += 1;
-      console.log("Turn Changed " + (this.state.currentTurn));
-      console.log(this.state.currentTurn);
-    });
-
-    this.onMessage("status", (client, message) => {
-
-      client.send("status", "Status currentTurn " + (this.state.currentTurn) + " number of Player " + (this.playerCount) + " player name " + JSON.stringify(this.state.players));
-    });
-
-    this.onMessage("move", (client, message) => {
-      const myPlayer = this.state.players.get(client.sessionId);
-
-      this.state.currentTurn += 1;
-
-      console.log("Before : " + JSON.stringify(myPlayer));
-
-      // Directly mutate the schema object's fields — this is tracked automatically
-      myPlayer.x = Math.floor(Math.random() * 3);
-      myPlayer.y = Math.floor(Math.random() * 3);
-      myPlayer.z = 0;
-
-      // Optional: send position back to the client
-      client.send("move", {
-        x: myPlayer.x,
-        y: myPlayer.y,
-        z: myPlayer.z
-      });
-
-      console.log("After : " + JSON.stringify(myPlayer));
-    });
-
-    this.onMessage("MovementData", (client, message) => {
-
-      const myPlayer = this.state.players.get(client.sessionId);
-
-      // Directly mutate the schema object's fields — this is tracked automatically
-      myPlayer.x = message.x;
-      myPlayer.y = message.y;
-      myPlayer.z = message.z;
-      myPlayer.qx = message.qx;
-      myPlayer.qy = message.qy;
-      myPlayer.qz = message.qz;
-    });
-
-    this.onMessage("bullet_fired", (client, message) => {
-
-      console.log("Bullet Fired By Player " + client.sessionId);
-      console.log("Bullet Config " + JSON.stringify(message));
-
-      // message contains position & direction of bullet
-      const bulletData = {
-        shooterId: client.sessionId,
-        position: message.position,  
-        direction: message.direction,
-        speed : message.speed
-      };
-
-      // Broadcast to all other clients (excluding sender if needed)
-      this.broadcast("spawn_bullet", bulletData , { except: client });
-
-    });
-
-    this.onMessage("player_hit", (client, message)=>{
-      
-      console.log("Client ID  : " + message.targetID);
-       const targetClient = this.clients.getById(message.targetID);
-       targetClient.send("player_hit");
-
-    });
-
+    console.log(`Room ${this.roomId} created`);
   }
 
   onJoin(client: Client, options: any) {
@@ -139,6 +60,77 @@ export class MyRoom extends Room<MyRoomState> {
 
   onDispose() {
     console.log("room", this.roomId, "disposing...");
+  }
+
+  // Setup all message handlers
+  private SetUpMessageHandlers() {
+    this.onMessage("ping", (client, message) => {
+      console.log(`Ping from ${client.sessionId}:`, message);
+      client.send("pong", { message: "pong" });
+    });
+
+    this.onMessage("next_turn", () => {
+      this.state.currentTurn += 1;
+      console.log("Turn changed to:", this.state.currentTurn);
+    });
+
+    this.onMessage("status", (client) => {
+      client.send("status", `Status - Turn: ${this.state.currentTurn}, Players: ${this.playerCount}, Player Data: ${JSON.stringify(this.state.players)}`);
+    });
+
+    this.onMessage("move", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+
+      this.state.currentTurn += 1;
+
+      console.log("Before Move:", JSON.stringify(player));
+      player.x = Math.floor(Math.random() * 3);
+      player.y = Math.floor(Math.random() * 3);
+      player.z = 0;
+      console.log("After Move:", JSON.stringify(player));
+
+      client.send("move", { x: player.x, y: player.y, z: player.z });
+    });
+
+    this.onMessage("MovementData", (client, message) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+
+      Object.assign(player, {
+        x: message.x,
+        y: message.y,
+        z: message.z,
+        qx: message.qx,
+        qy: message.qy,
+        qz: message.qz,
+      });
+    });
+
+    this.onMessage("bullet_fired", (client, message) => {
+      console.log(`Bullet fired by ${client.sessionId}`);
+      console.log("Bullet config:", message);
+
+      const bulletData = {
+        shooterId: client.sessionId,
+        position: message.position,
+        direction: message.direction,
+        speed: message.speed,
+      };
+
+      this.broadcast("spawn_bullet", bulletData, { except: client });
+    });
+
+    this.onMessage("player_hit", (client, message) => {
+      const targetId = message.targetID;
+      const target = this.clients.find(c => c.sessionId === targetId);
+      if (target) {
+        console.log(`Player hit: ${targetId}`);
+        target.send("player_hit");
+      } else {
+        console.warn(`Target client not found: ${targetId}`);
+      }
+    });
   }
 
 }

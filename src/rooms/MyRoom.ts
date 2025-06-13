@@ -5,7 +5,6 @@ import { PlayerState } from "./schema/PlayerState";
 export class MyRoom extends Room<MyRoomState> {
   maxClients = 4;
   state = new MyRoomState();
-
   playerCount = 0;
 
   onCreate(options: any) {
@@ -65,6 +64,7 @@ export class MyRoom extends Room<MyRoomState> {
 
   // Setup all message handlers
   private SetUpMessageHandlers() {
+
     this.onMessage("ping", (client, message) => {
       console.log(`Ping from ${client.sessionId}:`, message);
       client.send("pong", { message: "pong" });
@@ -114,9 +114,11 @@ export class MyRoom extends Room<MyRoomState> {
 
       const bulletData = {
         ownerID: client.sessionId,
-        position: message.position,
+        position: message.position,  
         direction: message.direction,
-        speed: message.speed,
+        speed : message.speed,
+        ownerBulletType: message.ownerBulletType,
+        lobCharge:message.lobCharge
       };
 
       this.broadcast("spawn_bullet", bulletData, { except: client });
